@@ -1,0 +1,101 @@
+unit Conf;
+
+interface
+
+uses
+  System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
+  FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.Dialogs, FMX.StdCtrls,
+  FMX.Edit, FMX.Controls.Presentation,FMX.ANI, FMX.Layouts,inifiles, ClientModuleUnit1,
+  ClientClassesUnit1, FMX.Objects;
+
+type
+  TForm4 = class(TForm)
+    Label1: TLabel;
+    edt_conf: TEdit;
+    Label2: TLabel;
+    SpeedButton1: TSpeedButton;
+    LayoutClient: TLayout;
+    SpeedButton2: TSpeedButton;
+    Rectangle1: TRectangle;
+    procedure FormVirtualKeyboardHidden(Sender: TObject;
+      KeyboardVisible: Boolean; const Bounds: TRect);
+    procedure FormVirtualKeyboardShown(Sender: TObject;
+      KeyboardVisible: Boolean; const Bounds: TRect);
+    procedure SpeedButton1Click(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
+  private
+    { Private declarations }
+  public
+    { Public declarations }
+  end;
+
+var
+  Form4: TForm4;
+  FTecladoShow: Boolean;    ///***Variaveis blobais
+  arquivoini : TIniFile;
+  ip : string;
+
+implementation
+
+{$R *.fmx}
+{$R *.LgXhdpiPh.fmx ANDROID}
+
+uses frmprincipal;
+{$R *.LgXhdpiPh.fmx ANDROID}
+
+procedure TForm4.FormCreate(Sender: TObject);
+begin
+arquivoini := TIniFile.Create('sdcard/configuracao.txt');
+edt_conf.Text := arquivoini.ReadString('conf','ip',''); //criado aqui para carregar os dados as informações no celular
+end;
+
+procedure TForm4.FormVirtualKeyboardHidden(Sender: TObject;
+  KeyboardVisible: Boolean; const Bounds: TRect);
+begin
+FTecladoShow := false;
+
+     if not KeyboardVisible then
+        AnimateFloat('Padding.Top', 0, 0.1);
+end;
+
+procedure TForm4.FormVirtualKeyboardShown(Sender: TObject;
+  KeyboardVisible: Boolean; const Bounds: TRect);
+var
+     O: TFMXObject;
+begin
+   FTecladoShow := true;
+
+     if Assigned(Focused) and (Focused.GetObject is TControl) then
+        if TControl(Focused).AbsoluteRect.Bottom - Padding.Top >= (Bounds.Top ) then
+        begin
+             //If switching between controls, the KeyboardHidden animation will run first
+             //and we'll see the form scroll up and then down.
+             //Calling StopPropertyAnimation jumps the first animation to it's final value - same problem
+             //Instead we need to search for the other animation and call StopAtCurrent.
+             for O in Children do
+                 if (O is TFloatAnimation) and (TFloatAnimation(O).PropertyName = 'Padding.Top') then
+                    TFloatAnimation(O).StopAtCurrent;
+
+             AnimateFloat('Padding.Top',Bounds.Top  - TControl(Focused).AbsoluteRect.Bottom + Padding.Top, 0.1)
+        end
+        else
+     else
+        AnimateFloat('Padding.Top', 0, 0.1);
+end;
+
+procedure TForm4.SpeedButton1Click(Sender: TObject);
+begin
+
+ arquivoini := TIniFile.Create('sdcard/configuracao.txt');   //criar aquivo ini celular
+arquivoini.WriteString('conf','ip',edt_conf.Text);   //escreve no ini
+ip := arquivoini.ReadString('conf','ip',''); //ler
+ClientModuleUnit1.ClientModule1.SQLConnection1.Params.Values['HostName'] := ip;//recebe ip
+
+
+
+ClientModule1.SQLConnection1.Open;         //conecta
+  ClientModule1.DSProviderConnection1.Open; //conecta
+
+end;
+
+end.
